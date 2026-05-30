@@ -10,7 +10,7 @@ import operator
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, AIMessage, ChatMessage
 from langchain_openai import ChatOpenAI
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from tavily import TavilyClient
 import os
 import sqlite3
@@ -93,11 +93,13 @@ class ewriter():
             SystemMessage(content=self.RESEARCH_PLAN_PROMPT),
             HumanMessage(content=state['task'])
         ])
-        content = state['content'] or []  # add to content
+        content = state.get('content') or []  # add to content
         for q in queries.queries:
             response = self.tavily.search(query=q, max_results=2)
             for r in response['results']:
-                content.append(r['content'])
+                text = r.get('content') or r.get('raw_content') or ''
+                if text:
+                    content.append(text)
         return {"content": content,
                 "queries": queries.queries,
                "lnode": "research_plan",
@@ -135,11 +137,13 @@ class ewriter():
             SystemMessage(content=self.RESEARCH_CRITIQUE_PROMPT),
             HumanMessage(content=state['critique'])
         ])
-        content = state['content'] or []
+        content = state.get('content') or []
         for q in queries.queries:
             response = self.tavily.search(query=q, max_results=2)
             for r in response['results']:
-                content.append(r['content'])
+                text = r.get('content') or r.get('raw_content') or ''
+                if text:
+                    content.append(text)
         return {"content": content,
                "lnode": "research_critique",
                 "count": 1,

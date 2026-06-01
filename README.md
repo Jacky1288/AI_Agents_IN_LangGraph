@@ -148,6 +148,7 @@ model = ChatOpenAI(model="gpt-4o-mini", temperature=0)   # cheap + supports stru
 | Gradio UI: all Textboxes show red "错误" / "Error" badges, but `Live Agent Output` shows the *whole tuple* | Gradio 6.x strictly checks output counts — `helper.py` had `outputs=[live]` on `gen_btn.click(...)` but `run_agent` yields 6 values, so the whole tuple is shoved into `live` and the other 5 boxes get nothing | Bind all 6 outputs: `outputs=[live, lnode_bx, nnode_bx, threadid_bx, revision_bx, count_bx]` for both `gen_btn` and `cont_btn` |
 | Gradio UI: a Textbox shows a red "错误" / "Error" badge even though a value is being written | Gradio 6.x rejects non-`str` values for `Textbox.value` (int, tuple, etc.). Old gradio coerced silently | Wrap with `str(...)` when yielding / returning values for Textboxes |
 | `KeyError: 'thread_ts'` inside `helper.py` | LangGraph renamed `config['configurable']['thread_ts']` to `checkpoint_id` in recent versions | Use `config['configurable'].get('checkpoint_id') or config['configurable'].get('thread_ts')` for back-compat |
+| Gradio UI: `Live Agent Output` keeps showing the *previous* essay's content after pressing **Generate Essay** with a new topic | `self.partial_message` in `helper.py` was only initialized in `__init__` and then **appended** on every run — never reset between essays | Reset `self.partial_message = ""` at the top of the `start=True` branch in `run_agent` (Continue Essay should still append, so don't reset there) |
 
 ---
 
@@ -295,3 +296,4 @@ model = ChatOpenAI(model="gpt-4o-mini", temperature=0)   # 便宜 + 完整支持
 | Gradio 界面所有 Textbox 显示红框"错误",但 `Live Agent Output` 里能看到**完整的 tuple** | Gradio 6.x 严格校验输出数量 —— `helper.py` 里 `gen_btn.click(...)` 只绑了 `outputs=[live]`,但 `run_agent` yield 6 个值,新版直接把整个 tuple 塞给 `live`,其余 5 个 Textbox 拿不到值 | 把 outputs 列全:`outputs=[live, lnode_bx, nnode_bx, threadid_bx, revision_bx, count_bx]`(`gen_btn` 和 `cont_btn` 都要) |
 | Gradio 界面某个 Textbox 红框"错误",即使后端确实在写值 | Gradio 6.x 不再静默接受非 `str` 类型(int / tuple 等)作为 `Textbox.value`,老 gradio 会自动 cast | 在 yield / return 给 Textbox 的值外面包一层 `str(...)` |
 | `helper.py` 抛 `KeyError: 'thread_ts'` | 新版 LangGraph 把 `config['configurable']['thread_ts']` 改名为 `checkpoint_id` | 用 `config['configurable'].get('checkpoint_id') or config['configurable'].get('thread_ts')` 兼容新旧两版 |
+| Gradio 界面换了 topic 再点 **Generate Essay**,Live Agent Output 还显示上一次的 essay 内容 | `helper.py` 里 `self.partial_message` 只在 `__init__` 初始化,之后每次跑都**累加**,从不清零 | 在 `run_agent` 的 `start=True` 分支开头加 `self.partial_message = ""`(Continue Essay 仍需要追加,所以不要在 else 分支清零) |

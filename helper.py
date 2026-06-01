@@ -174,9 +174,10 @@ class writer_gui( ):
         #global partial_message, thread_id,thread
         #global response, max_iterations, iterations, threads
         if start:
+            self.partial_message = ""   # reset live output for the new essay
             self.iterations.append(0)
             config = {'task': topic,"max_revisions": 2,"revision_number": 0,
-                      'lnode': "", 'planner': "no plan", 'draft': "no draft", 'critique': "no critique", 
+                      'lnode': "", 'planner': "no plan", 'draft': "no draft", 'critique': "no critique",
                       'content': ["no content",], 'queries': "no queries", 'count':0}
             self.thread_id += 1  # new agent, new thread
             self.threads.append(self.thread_id)

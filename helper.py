@@ -190,7 +190,7 @@ class writer_gui( ):
             self.partial_message += f"\n------------------\n\n"
             ## fix
             lnode,nnode,_,rev,acount = self.get_disp_state()
-            yield self.partial_message,lnode,nnode,self.thread_id,rev,acount
+            yield self.partial_message, str(lnode), str(nnode), str(self.thread_id), str(rev), str(acount)
             config = None #need
             #print(f"run_agent:{lnode}")
             if not nnode:  
@@ -239,7 +239,7 @@ class writer_gui( ):
         for state in self.graph.get_state_history(self.thread):
             if state.metadata['step'] < 1:
                 continue
-            thread_ts = state.config['configurable']['thread_ts']
+            thread_ts = state.config['configurable'].get('checkpoint_id') or state.config['configurable'].get('thread_ts', '')
             tid = state.config['configurable']['thread_id']
             count = state.values['count']
             lnode = state.values['lnode']
@@ -253,7 +253,7 @@ class writer_gui( ):
     def find_config(self,thread_ts):
         for state in self.graph.get_state_history(self.thread):
             config = state.config
-            if config['configurable']['thread_ts'] == thread_ts:
+            if (config['configurable'].get('checkpoint_id') or config['configurable'].get('thread_ts')) == thread_ts:
                 return config
         return(None)
             
@@ -268,7 +268,7 @@ class writer_gui( ):
         state = self.graph.get_state(config)
         self.graph.update_state(self.thread, state.values, as_node=state.values['lnode'])
         new_state = self.graph.get_state(self.thread)  #should now match
-        new_thread_ts = new_state.config['configurable']['thread_ts']
+        new_thread_ts = new_state.config['configurable'].get('checkpoint_id') or new_state.config['configurable'].get('thread_ts', '')
         tid = new_state.config['configurable']['thread_id']
         count = new_state.values['count']
         lnode = new_state.values['lnode']
@@ -308,7 +308,7 @@ class writer_gui( ):
                 for state in self.graph.get_state_history(self.thread):
                     if state.metadata['step'] < 1:  #ignore early states
                         continue
-                    s_thread_ts = state.config['configurable']['thread_ts']
+                    s_thread_ts = state.config['configurable'].get('checkpoint_id') or state.config['configurable'].get('thread_ts', '')
                     s_tid = state.config['configurable']['thread_id']
                     s_count = state.values['count']
                     s_lnode = state.values['lnode']
@@ -320,12 +320,12 @@ class writer_gui( ):
                     return{}
                 else:
                     return {
-                        topic_bx : current_state.values["task"],
-                        lnode_bx : current_state.values["lnode"],
-                        count_bx : current_state.values["count"],
-                        revision_bx : current_state.values["revision_number"],
-                        nnode_bx : current_state.next,
-                        threadid_bx : self.thread_id,
+                        topic_bx : str(current_state.values["task"]),
+                        lnode_bx : str(current_state.values["lnode"]),
+                        count_bx : str(current_state.values["count"]),
+                        revision_bx : str(current_state.values["revision_number"]),
+                        nnode_bx : str(current_state.next),
+                        threadid_bx : str(self.thread_id),
                         thread_pd : gr.Dropdown(label="choose thread", choices=self.threads, value=self.thread_id,interactive=True),
                         step_pd : gr.Dropdown(label="update_state from: thread:count:last_node:next_node:rev:thread_ts", 
                                choices=hist, value=hist[0],interactive=True),
@@ -376,13 +376,15 @@ class writer_gui( ):
                 step_pd.input(self.copy_state,[step_pd],None).then(
                               fn=updt_disp, inputs=None, outputs=sdisps)
                 gen_btn.click(vary_btn,gr.Number("secondary", visible=False), gen_btn).then(
-                              fn=self.run_agent, inputs=[gr.Number(True, visible=False),topic_bx,stop_after], outputs=[live],show_progress=True).then(
-                              fn=updt_disp, inputs=None, outputs=sdisps).then( 
+                              fn=self.run_agent, inputs=[gr.Number(True, visible=False),topic_bx,stop_after],
+                              outputs=[live, lnode_bx, nnode_bx, threadid_bx, revision_bx, count_bx],
+                              show_progress=True).then(
+                              fn=updt_disp, inputs=None, outputs=sdisps).then(
                               vary_btn,gr.Number("primary", visible=False), gen_btn).then(
                               vary_btn,gr.Number("primary", visible=False), cont_btn)
                 cont_btn.click(vary_btn,gr.Number("secondary", visible=False), cont_btn).then(
-                               fn=self.run_agent, inputs=[gr.Number(False, visible=False),topic_bx,stop_after], 
-                               outputs=[live]).then(
+                               fn=self.run_agent, inputs=[gr.Number(False, visible=False),topic_bx,stop_after],
+                               outputs=[live, lnode_bx, nnode_bx, threadid_bx, revision_bx, count_bx]).then(
                                fn=updt_disp, inputs=None, outputs=sdisps).then(
                                vary_btn,gr.Number("primary", visible=False), cont_btn)
         

@@ -145,6 +145,9 @@ model = ChatOpenAI(model="gpt-4o-mini", temperature=0)   # cheap + supports stru
 | `ModuleNotFoundError: langchain_core.pydantic_v1` | Removed in recent `langchain-core` | Change import to `from pydantic import BaseModel` |
 | `ModuleNotFoundError: gradio` | Optional GUI dependency | `pip install gradio` |
 | VS Code: edits to `.ipynb` keep getting reverted after re-running | VS Code's "Hot Exit" restores the in-memory buffer over your on-disk edits | Close the notebook tab and choose **Don't Save**, or open a renamed copy of the file |
+| Gradio UI: all Textboxes show red "错误" / "Error" badges, but `Live Agent Output` shows the *whole tuple* | Gradio 6.x strictly checks output counts — `helper.py` had `outputs=[live]` on `gen_btn.click(...)` but `run_agent` yields 6 values, so the whole tuple is shoved into `live` and the other 5 boxes get nothing | Bind all 6 outputs: `outputs=[live, lnode_bx, nnode_bx, threadid_bx, revision_bx, count_bx]` for both `gen_btn` and `cont_btn` |
+| Gradio UI: a Textbox shows a red "错误" / "Error" badge even though a value is being written | Gradio 6.x rejects non-`str` values for `Textbox.value` (int, tuple, etc.). Old gradio coerced silently | Wrap with `str(...)` when yielding / returning values for Textboxes |
+| `KeyError: 'thread_ts'` inside `helper.py` | LangGraph renamed `config['configurable']['thread_ts']` to `checkpoint_id` in recent versions | Use `config['configurable'].get('checkpoint_id') or config['configurable'].get('thread_ts')` for back-compat |
 
 ---
 
@@ -289,3 +292,6 @@ model = ChatOpenAI(model="gpt-4o-mini", temperature=0)   # 便宜 + 完整支持
 | `ModuleNotFoundError: langchain_core.pydantic_v1` | 新版 `langchain-core` 删了这个兼容层 | 改成 `from pydantic import BaseModel` |
 | `ModuleNotFoundError: gradio` | GUI 依赖没装 | `pip install gradio` |
 | VS Code 里 `.ipynb` 怎么改都没生效 / 改完又被回滚 | VS Code 的 Hot Exit 会用内存里的旧 buffer 覆盖磁盘 | 关 tab 时点 **"Don't Save"**,或者把文件改名再打开 |
+| Gradio 界面所有 Textbox 显示红框"错误",但 `Live Agent Output` 里能看到**完整的 tuple** | Gradio 6.x 严格校验输出数量 —— `helper.py` 里 `gen_btn.click(...)` 只绑了 `outputs=[live]`,但 `run_agent` yield 6 个值,新版直接把整个 tuple 塞给 `live`,其余 5 个 Textbox 拿不到值 | 把 outputs 列全:`outputs=[live, lnode_bx, nnode_bx, threadid_bx, revision_bx, count_bx]`(`gen_btn` 和 `cont_btn` 都要) |
+| Gradio 界面某个 Textbox 红框"错误",即使后端确实在写值 | Gradio 6.x 不再静默接受非 `str` 类型(int / tuple 等)作为 `Textbox.value`,老 gradio 会自动 cast | 在 yield / return 给 Textbox 的值外面包一层 `str(...)` |
+| `helper.py` 抛 `KeyError: 'thread_ts'` | 新版 LangGraph 把 `config['configurable']['thread_ts']` 改名为 `checkpoint_id` | 用 `config['configurable'].get('checkpoint_id') or config['configurable'].get('thread_ts')` 兼容新旧两版 |
